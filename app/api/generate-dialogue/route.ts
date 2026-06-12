@@ -1,3 +1,5 @@
+import { createPublicClient, formatEther, formatUnits, http } from "viem";
+import { mantle } from "viem/chains";
 import { createTokimekiPrompt, type Language } from "@/lib/tokimekiPrompt";
 
 type Expression =
@@ -19,6 +21,36 @@ type DialogueResult = {
   line2: string;
   line3: string;
 };
+
+type WalletSummary = {
+  address: string;
+  balanceMNT: number;
+  balanceUSD: number;
+  txCount: number;
+  activeRecently: boolean;
+  defiUser: boolean;
+  nftCount: number;
+};
+
+const MANTLE_RPC_URL =
+  process.env.MANTLE_RPC_URL || "https://rpc.mantle.xyz";
+
+const USDC_ADDRESS = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9";
+
+const erc20Abi = [
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+const publicClient = createPublicClient({
+  chain: mantle,
+  transport: http(MANTLE_RPC_URL),
+});
 
 function extractJson(text: string): string {
   const cleaned = text
@@ -59,6 +91,67 @@ function safeImageFile(fileName: string | undefined): string {
     : "girl_normal.png";
 }
 
+async function getMntPriceUsd(): Promise<number> {
+  try {
+    const response = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=mantle&vs_currencies=usd",
+      {
+        next: {
+          revalidate: 60,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return 0.54;
+    }
+
+    const data = await response.json();
+    const price = Number(data?.mantle?.usd);
+
+    return Number.isFinite(price) && price > 0 ? price : 0.54;
+  } catch {
+    return 0.54;
+  }
+}
+
+async function getMantleWalletSummary(address: string): Promise<WalletSummary> {
+  const walletAddress = address as `0x${string}`;
+
+  const [mntBalanceRaw, usdcBalanceRaw, txCount, mntPriceUsd] =
+    await Promise.all([
+      publicClient.getBalance({
+        address: walletAddress,
+      }),
+      publicClient.readContract({
+        address: USDC_ADDRESS,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [walletAddress],
+      }),
+      publicClient.getTransactionCount({
+        address: walletAddress,
+      }),
+      getMntPriceUsd(),
+    ]);
+
+  const balanceMNT = Number(formatEther(mntBalanceRaw));
+  const usdcBalance = Number(formatUnits(usdcBalanceRaw, 6));
+
+  const mntValueUSD = balanceMNT * mntPriceUsd;
+  const balanceUSD = mntValueUSD + usdcBalance;
+
+  return {
+    address,
+    balanceMNT: Number(balanceMNT.toFixed(6)),
+    balanceUSD: Number(balanceUSD.toFixed(2)),
+    txCount,
+    activeRecently: txCount > 0,
+    defiUser: usdcBalance > 0 || txCount >= 5,
+    nftCount: 0,
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -82,39 +175,29 @@ export async function POST(request: Request) {
       );
     }
 
-    // 今は仮データ。あとでMantleScan / Mantle RPCの実データに差し替える
-    const walletSummary = {
-      address,
-      balanceMNT: 3.5,
-      balanceUSD: 4.2,
-      txCount: 42,
-      activeRecently: true,
-      defiUser: true,
-      nftCount: 1,
-    };
+    const walletSummary = await getMantleWalletSummary(address);
 
-    // Surfクレジット節約用
     if (process.env.USE_MOCK_SURF === "true") {
       const mockDialogue: DialogueResult = isEnglish
         ? {
             characterName: "Mantle-chan",
-            walletType: "Small but Diligent Wallet",
-            expression: "bad",
-            imageFile: "girl_bad.png",
-            affinity: 28,
-            line1: "Your balance is only about 4.2 dollars.",
-            line2: "Did your wallet get a hole in it?",
-            line3: "Still, 42 transactions is not bad.",
+            walletType: "Mantle Wallet",
+            expression: "smile",
+            imageFile: "girl_smile.png",
+            affinity: 50,
+            line1: `Your wallet has about $${walletSummary.balanceUSD}.`,
+            line2: `I see ${walletSummary.txCount} transactions on Mantle.`,
+            line3: "Do not think I am impressed that easily.",
           }
         : {
             characterName: "Mantleちゃん",
-            walletType: "穴あき財布の勤勉者",
-            expression: "bad",
-            imageFile: "girl_bad.png",
-            affinity: 28,
-            line1: "残高は約4.2ドルね。",
-            line2: "財布に穴が空いちゃった？",
-            line3: "でも42回も動いてるのは悪くないわ。",
+            walletType: "Mantleウォレット",
+            expression: "smile",
+            imageFile: "girl_smile.png",
+            affinity: 50,
+            line1: `残高は約${walletSummary.balanceUSD}ドルね。`,
+            line2: `Mantleでの取引は${walletSummary.txCount}回見えるわ。`,
+            line3: "それだけで感心すると思わないで。",
           };
 
       return Response.json({
@@ -130,8 +213,8 @@ export async function POST(request: Request) {
       return Response.json(
         {
           error: isEnglish
-            ? "SURF_API_KEY is missing in .env.local"
-            : ".env.local に SURF_API_KEY がありません。",
+            ? "SURF_API_KEY is missing in Vercel Environment Variables."
+            : "VercelのEnvironment Variablesに SURF_API_KEY がありません。",
         },
         { status: 500 }
       );
