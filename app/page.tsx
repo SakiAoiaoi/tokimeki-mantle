@@ -1,6 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import {
+  getWalletErrorCode,
+  isWrongChainError,
+  saveTokimekiDialogue,
+  type EthereumProvider,
+} from "@/lib/mantleTokimeki";
 
 type Language = "ja" | "en";
 
@@ -23,6 +29,12 @@ type Dialogue = {
   line2: string;
   line3: string;
 };
+
+declare global {
+  interface Window {
+    ethereum?: EthereumProvider;
+  }
+}
 
 const characterImages: Record<Expression, string> = {
   normal: "/characters/girl_normal.png",
@@ -55,13 +67,20 @@ const uiText = {
     defaultLine1: "ええっお財布を見せてくれるの",
     defaultLine2: "でもわたし、Mantleしか興味ないから...",
     saveButton: "このTokimekiをMantleチェーンに保存",
+    savingButton: "保存中...",
     addressLabel: "Paste Mantle Wallet Address",
     languageJa: "日本語",
     languageEn: "English",
     errorGeneric: "エラーが出ました",
     trapLine: "忙しいの！",
-    contractNote:
-      "次のステップで、このボタンからMantle上のsaveTokimekiResult()を呼びます。",
+    connectWallet: "ウォレットを接続してください...",
+    saved: "Mantleに保存しました！",
+    noWallet: "ウォレットが見つかりません。MetaMaskやRabbyを開いてください。",
+    saveFailed:
+      "ウォレット側で失敗しました。MetaMaskで試すか、ウォレットを再接続してください。",
+    cancelled: "ウォレットでキャンセルされました。",
+    wrongChain:
+      "ウォレットをMantle Networkに切り替えてから、もう一度押してください。",
   },
   en: {
     subtitle: "Mantle Memorial",
@@ -73,13 +92,19 @@ const uiText = {
     defaultLine1: "Oh, you wanna show me your wallet?",
     defaultLine2: "But I'm only interested in Mantle...",
     saveButton: "Save this Tokimeki on Mantle Chain",
+    savingButton: "Saving...",
     addressLabel: "Paste Mantle Wallet Address",
     languageJa: "日本語",
     languageEn: "English",
     errorGeneric: "Something went wrong",
     trapLine: "I'm busy!",
-    contractNote:
-      "Next step: this button will call saveTokimekiResult() on Mantle.",
+    connectWallet: "Please connect your wallet...",
+    saved: "Saved on Mantle!",
+    noWallet: "No wallet found. Please open MetaMask, Rabby, or another EVM wallet.",
+    saveFailed:
+      "Wallet request failed. Please try MetaMask or reconnect your wallet.",
+    cancelled: "Cancelled in wallet.",
+    wrongChain: "Please switch your wallet to Mantle Network and try again.",
   },
 };
 
@@ -107,6 +132,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [isLeaving, setIsLeaving] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const t = uiText[language];
 
@@ -158,7 +184,7 @@ export default function Home() {
       setDialogue(data.dialogue);
       setMock(data.mock);
     } catch (error) {
-      console.error(error);
+      console.warn("Generate dialogue failed:", error);
       setError(t.errorGeneric);
     } finally {
       setLoading(false);
@@ -180,8 +206,49 @@ export default function Home() {
     setError("");
   }
 
-  function saveTokimekiPlaceholder() {
-    setSaveMessage(t.contractNote);
+  async function saveTokimekiOnChain() {
+    setError("");
+    setSaveMessage("");
+
+    if (!dialogue) return;
+
+    if (!window.ethereum) {
+      setError(t.noWallet);
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setSaveMessage(t.connectWallet);
+
+      const txHash = await saveTokimekiDialogue({
+        ethereum: window.ethereum,
+        line1: dialogue.line1,
+        line2: dialogue.line2,
+        line3: dialogue.line3,
+      });
+
+      setSaveMessage(`${t.saved} Tx: ${txHash}`);
+    } catch (error) {
+      const code = getWalletErrorCode(error);
+
+      console.warn("Wallet request failed:", {
+        code,
+        error,
+      });
+
+      if (isWrongChainError(error)) {
+        setError(t.wrongChain);
+      } else if (code === 4001 || code === "4001") {
+        setError(t.cancelled);
+      } else {
+        setError(t.saveFailed);
+      }
+
+      setSaveMessage("");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -241,7 +308,7 @@ export default function Home() {
               <div className="mx-auto flex w-full max-w-[620px] items-center gap-2">
                 <input
                   value={address}
-                  onChange={(e) => setAddress(e.target.value.trim())}
+                  onChange={(event) => setAddress(event.target.value.trim())}
                   placeholder={t.placeholder}
                   className="min-w-0 flex-1 rounded-xl border border-white/30 bg-black/45 px-4 py-3 text-center text-sm text-white outline-none placeholder:text-white/50 focus:border-pink-200"
                 />
@@ -334,18 +401,25 @@ export default function Home() {
               <div className="absolute bottom-[9%] right-[7%]">
                 <button
                   type="button"
-                  onClick={saveTokimekiPlaceholder}
-                  className="rounded-full bg-pink-300 px-4 py-2 text-xs font-bold text-black shadow-lg transition hover:bg-pink-200 md:px-6 md:py-3 md:text-sm"
+                  onClick={saveTokimekiOnChain}
+                  disabled={saving}
+                  className="rounded-full bg-pink-300 px-4 py-2 text-xs font-bold text-black shadow-lg transition hover:bg-pink-200 disabled:cursor-not-allowed disabled:opacity-60 md:px-6 md:py-3 md:text-sm"
                 >
-                  {t.saveButton}
+                  {saving ? t.savingButton : t.saveButton}
                 </button>
               </div>
             )}
           </div>
 
           {saveMessage && (
-            <p className="mx-auto mt-2 max-w-2xl rounded-xl bg-black/65 px-4 py-2 text-center text-xs text-white shadow-lg md:text-sm">
+            <p className="mx-auto mt-2 max-w-2xl break-all rounded-xl bg-black/65 px-4 py-2 text-center text-xs text-white shadow-lg md:text-sm">
               {saveMessage}
+            </p>
+          )}
+
+          {error && (dialogue || isLeaving) && (
+            <p className="mx-auto mt-2 max-w-2xl rounded-xl bg-red-950/75 px-4 py-2 text-center text-xs text-red-100 shadow-lg md:text-sm">
+              {error}
             </p>
           )}
         </div>
