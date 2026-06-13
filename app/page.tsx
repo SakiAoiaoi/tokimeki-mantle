@@ -103,7 +103,8 @@ const uiText = {
     trapLine: "I'm busy!",
     connectWallet: "Please connect your wallet...",
     saved: "Saved on Mantle!",
-    noWallet: "No wallet found. Please open MetaMask, Rabby, or another EVM wallet.",
+    noWallet:
+      "No wallet found. Please open MetaMask, Rabby, or another EVM wallet.",
     saveFailed:
       "Wallet request failed. Please try MetaMask or reconnect your wallet.",
     cancelled: "Cancelled in wallet.",
@@ -193,7 +194,6 @@ export default function Home() {
   }
 
   function startGame() {
-    // BGMを止めずに本編へ進む
     setStarted(true);
   }
 
@@ -303,16 +303,18 @@ export default function Home() {
 
   if (!started) {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-black text-white">
+      <main className="relative min-h-dvh overflow-hidden bg-black text-white">
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-pink-950/40 to-black" />
+
         <img
           src="/start/title.png"
           alt="Tokimeki Mantle title"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-contain object-center p-2 sm:p-0"
         />
 
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-black/10" />
 
-        <div className="absolute right-5 top-5 z-20 flex rounded-full bg-black/35 p-1 text-xs shadow-lg backdrop-blur">
+        <div className="absolute right-3 top-3 z-20 flex rounded-full bg-black/40 p-1 text-[11px] shadow-lg backdrop-blur sm:right-5 sm:top-5 sm:text-xs">
           <button
             type="button"
             onClick={() => setLanguage("ja")}
@@ -337,11 +339,11 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="absolute bottom-16 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-4">
+        <div className="absolute bottom-[max(28px,env(safe-area-inset-bottom))] left-1/2 z-20 flex w-full -translate-x-1/2 flex-col items-center gap-3 px-4 sm:bottom-16 sm:gap-4">
           <button
             type="button"
             onClick={startGame}
-            className="rounded-full bg-pink-300 px-14 py-4 text-xl font-bold tracking-[0.25em] text-black shadow-2xl transition hover:bg-pink-200 active:scale-95 md:px-20 md:py-5 md:text-2xl"
+            className="w-full max-w-[280px] rounded-full bg-pink-300 px-10 py-4 text-lg font-bold tracking-[0.22em] text-black shadow-2xl transition hover:bg-pink-200 active:scale-95 sm:max-w-none sm:w-auto sm:px-20 sm:py-5 sm:text-2xl"
           >
             {t.start}
           </button>
@@ -349,7 +351,7 @@ export default function Home() {
           <button
             type="button"
             onClick={toggleOpeningBgm}
-            className="rounded-full bg-black/65 px-6 py-2 text-sm font-bold text-white shadow-lg backdrop-blur transition hover:bg-black/85"
+            className="rounded-full bg-black/70 px-6 py-2 text-sm font-bold text-white shadow-lg backdrop-blur transition hover:bg-black/85"
           >
             {bgmOn ? t.bgmOff : t.bgmOn}
           </button>
@@ -359,40 +361,40 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <section className="relative mx-auto min-h-screen w-full max-w-[1280px] overflow-hidden bg-black">
+    <main className="min-h-dvh bg-black text-white">
+      <section className="relative mx-auto min-h-dvh w-full max-w-[1280px] overflow-hidden bg-black">
         <img
           src="/backgrounds/park.png"
           alt="park background"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-center"
         />
 
-        <div className="absolute inset-0 bg-black/5" />
+        <div className="absolute inset-0 bg-black/10" />
 
-        <div className="absolute left-5 top-5 z-50">
+        <div className="absolute left-3 top-3 z-50 sm:left-5 sm:top-5">
           <button
             type="button"
             onClick={toggleOpeningBgm}
-            className="rounded-full bg-black/55 px-4 py-2 text-xs font-bold text-white shadow-lg backdrop-blur transition hover:bg-black/75"
+            className="rounded-full bg-black/60 px-4 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur transition hover:bg-black/75 sm:text-xs"
           >
             {bgmOn ? t.bgmOff : t.bgmOn}
           </button>
         </div>
 
         {!dialogue && !isLeaving && (
-          <div className="absolute left-0 right-0 top-[190px] z-30 px-4 md:top-[230px] md:px-10">
-            <div className="mx-auto max-w-3xl rounded-2xl border border-white/35 bg-black/25 px-4 py-3 shadow-xl backdrop-blur-md md:px-5 md:py-4">
-              <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="absolute left-0 right-0 top-[76px] z-30 px-3 sm:top-[120px] sm:px-6 md:top-[190px] md:px-10">
+            <div className="mx-auto max-w-3xl rounded-2xl border border-white/35 bg-black/35 px-4 py-4 shadow-xl backdrop-blur-md sm:px-5">
+              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-[10px] tracking-[0.3em] text-white/85 md:text-xs">
+                  <p className="text-[10px] tracking-[0.3em] text-white/85 sm:text-xs">
                     {t.subtitle}
                   </p>
-                  <h1 className="text-2xl font-bold md:text-4xl">
+                  <h1 className="text-2xl font-bold sm:text-3xl md:text-4xl">
                     {t.title}
                   </h1>
                 </div>
 
-                <div className="flex shrink-0 rounded-full bg-black/35 p-1 text-xs">
+                <div className="flex w-fit shrink-0 rounded-full bg-black/35 p-1 text-[11px] sm:text-xs">
                   <button
                     type="button"
                     onClick={() => handleLanguageChange("ja")}
@@ -418,23 +420,23 @@ export default function Home() {
                 </div>
               </div>
 
-              <label className="mb-1 block text-center text-xs text-white/80 md:text-sm">
+              <label className="mb-2 block text-center text-xs text-white/80 sm:text-sm">
                 {t.addressLabel}
               </label>
 
-              <div className="mx-auto flex w-full max-w-[620px] items-center gap-2">
+              <div className="mx-auto flex w-full max-w-[620px] flex-col items-stretch gap-2 sm:flex-row sm:items-center">
                 <input
                   value={address}
                   onChange={(event) => setAddress(event.target.value.trim())}
                   placeholder={t.placeholder}
-                  className="min-w-0 flex-1 rounded-xl border border-white/30 bg-black/45 px-4 py-3 text-center text-sm text-white outline-none placeholder:text-white/50 focus:border-pink-200"
+                  className="min-w-0 flex-1 rounded-xl border border-white/30 bg-black/50 px-4 py-3 text-center text-sm text-white outline-none placeholder:text-white/50 focus:border-pink-200"
                 />
 
                 <button
                   type="button"
                   onClick={generateDialogue}
                   disabled={loading || !address}
-                  className="shrink-0 rounded-xl bg-pink-300 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-pink-200 disabled:cursor-not-allowed disabled:opacity-50 md:px-5"
+                  className="shrink-0 rounded-xl bg-pink-300 px-5 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-pink-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {loading ? t.loading : t.button}
                 </button>
@@ -450,11 +452,11 @@ export default function Home() {
         )}
 
         {dialogue && !isLeaving && (
-          <div className="absolute right-5 top-5 z-50 flex gap-2">
+          <div className="absolute right-3 top-3 z-50 sm:right-5 sm:top-5">
             <button
               type="button"
               onClick={trapButton}
-              className="rounded-full bg-black/55 px-4 py-2 text-xs font-bold text-white shadow-lg backdrop-blur transition hover:bg-black/75"
+              className="rounded-full bg-black/60 px-4 py-2 text-[11px] font-bold text-white shadow-lg backdrop-blur transition hover:bg-black/75 sm:text-xs"
             >
               {language === "en" ? "Show another wallet" : "別の財布を見せる"}
             </button>
@@ -466,26 +468,26 @@ export default function Home() {
           alt="Mantle chan"
           className={`absolute left-1/2 z-10 -translate-x-1/2 object-contain drop-shadow-2xl ${
             isLeaving
-              ? "bottom-[145px] h-[68vh] max-h-[760px] md:bottom-[115px] md:left-[52%] md:h-[82vh]"
-              : "bottom-[175px] h-[58vh] max-h-[670px] md:bottom-[150px] md:left-[56%] md:h-[70vh]"
+              ? "bottom-[150px] h-[55dvh] max-h-[560px] sm:bottom-[145px] sm:h-[68dvh] md:bottom-[115px] md:left-[52%] md:h-[82dvh] md:max-h-[760px]"
+              : "bottom-[165px] h-[48dvh] max-h-[520px] sm:bottom-[175px] sm:h-[58dvh] md:bottom-[150px] md:left-[56%] md:h-[70dvh] md:max-h-[670px]"
           }`}
         />
 
-        <div className="absolute bottom-3 left-1/2 z-40 w-[97%] max-w-[1120px] -translate-x-1/2 md:bottom-6">
+        <div className="absolute bottom-[max(8px,env(safe-area-inset-bottom))] left-1/2 z-40 w-[98%] max-w-[1120px] -translate-x-1/2 sm:bottom-3 md:bottom-6">
           <div className="relative">
             <img
               src="/ui/dialogue.png"
               alt="dialogue box"
-              className="w-full select-none"
+              className="h-[150px] w-full select-none object-fill sm:h-auto"
             />
 
-            <div className="absolute left-[2%] top-[10%] flex h-[44px] w-[230px] items-center justify-center text-center text-sm font-bold text-slate-700 md:h-[56px] md:w-[280px] md:text-lg">
-              <span className="truncate px-3">
+            <div className="absolute left-[2%] top-[9%] flex h-[34px] w-[34%] max-w-[230px] items-center justify-center text-center text-xs font-bold text-slate-700 sm:h-[44px] sm:text-sm md:h-[56px] md:max-w-[280px] md:text-lg">
+              <span className="truncate px-2">
                 {dialogue?.characterName || t.defaultName}
               </span>
             </div>
 
-            <div className="absolute left-[8%] right-[8%] top-[38%] text-[13px] leading-relaxed text-slate-800 md:text-[22px] md:leading-relaxed">
+            <div className="absolute left-[7%] right-[7%] top-[36%] text-[13px] leading-relaxed text-slate-800 sm:left-[8%] sm:right-[8%] sm:top-[38%] sm:text-[15px] md:text-[22px] md:leading-relaxed">
               {isLeaving ? (
                 <div>
                   {leavingLines.map((line, index) => (
@@ -515,12 +517,12 @@ export default function Home() {
             </div>
 
             {dialogue && !isLeaving && (
-              <div className="absolute bottom-[9%] right-[7%]">
+              <div className="absolute bottom-[7%] right-[5%] sm:bottom-[9%] sm:right-[7%]">
                 <button
                   type="button"
                   onClick={saveTokimekiOnChain}
                   disabled={saving}
-                  className="rounded-full bg-pink-300 px-4 py-2 text-xs font-bold text-black shadow-lg transition hover:bg-pink-200 disabled:cursor-not-allowed disabled:opacity-60 md:px-6 md:py-3 md:text-sm"
+                  className="rounded-full bg-pink-300 px-3 py-2 text-[10px] font-bold text-black shadow-lg transition hover:bg-pink-200 disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-xs md:px-6 md:py-3 md:text-sm"
                 >
                   {saving ? t.savingButton : t.saveButton}
                 </button>
@@ -529,13 +531,13 @@ export default function Home() {
           </div>
 
           {saveMessage && (
-            <p className="mx-auto mt-2 max-w-2xl break-all rounded-xl bg-black/65 px-4 py-2 text-center text-xs text-white shadow-lg md:text-sm">
+            <p className="mx-auto mt-2 max-w-2xl break-all rounded-xl bg-black/70 px-4 py-2 text-center text-xs text-white shadow-lg sm:text-sm">
               {saveMessage}
             </p>
           )}
 
           {error && (dialogue || isLeaving) && (
-            <p className="mx-auto mt-2 max-w-2xl rounded-xl bg-red-950/75 px-4 py-2 text-center text-xs text-red-100 shadow-lg md:text-sm">
+            <p className="mx-auto mt-2 max-w-2xl rounded-xl bg-red-950/75 px-4 py-2 text-center text-xs text-red-100 shadow-lg sm:text-sm">
               {error}
             </p>
           )}
