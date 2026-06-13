@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   getWalletErrorCode,
   isWrongChainError,
@@ -81,6 +81,9 @@ const uiText = {
     cancelled: "ウォレットでキャンセルされました。",
     wrongChain:
       "ウォレットをMantle Networkに切り替えてから、もう一度押してください。",
+    start: "START",
+    bgmOn: "♬ BGM ON",
+    bgmOff: "♬ BGM OFF",
   },
   en: {
     subtitle: "Mantle Memorial",
@@ -105,6 +108,9 @@ const uiText = {
       "Wallet request failed. Please try MetaMask or reconnect your wallet.",
     cancelled: "Cancelled in wallet.",
     wrongChain: "Please switch your wallet to Mantle Network and try again.",
+    start: "START",
+    bgmOn: "BGM ON",
+    bgmOff: "BGM OFF",
   },
 };
 
@@ -134,6 +140,10 @@ export default function Home() {
   const [isLeaving, setIsLeaving] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [started, setStarted] = useState(false);
+  const [bgmOn, setBgmOn] = useState(false);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+
   const t = uiText[language];
 
   const currentCharacter = isLeaving
@@ -146,6 +156,46 @@ export default function Home() {
 
   const dialogueLines = dialogue ? getDialogueLines(dialogue) : [];
   const leavingLines = [t.trapLine];
+
+  function playOpeningBgm() {
+    if (!bgmRef.current) {
+      bgmRef.current = new Audio("/sounds/opening.mp3");
+      bgmRef.current.loop = true;
+      bgmRef.current.volume = 0.45;
+    }
+
+    bgmRef.current
+      .play()
+      .then(() => {
+        setBgmOn(true);
+      })
+      .catch((error) => {
+        console.warn("BGM play failed:", error);
+        setBgmOn(false);
+      });
+  }
+
+  function stopOpeningBgm() {
+    if (bgmRef.current) {
+      bgmRef.current.pause();
+      bgmRef.current.currentTime = 0;
+    }
+
+    setBgmOn(false);
+  }
+
+  function toggleOpeningBgm() {
+    if (bgmOn) {
+      stopOpeningBgm();
+    } else {
+      playOpeningBgm();
+    }
+  }
+
+  function startGame() {
+    // BGMを止めずに本編へ進む
+    setStarted(true);
+  }
 
   async function generateDialogue() {
     setLoading(true);
@@ -251,6 +301,63 @@ export default function Home() {
     }
   }
 
+  if (!started) {
+    return (
+      <main className="relative min-h-screen overflow-hidden bg-black text-white">
+        <img
+          src="/start/title.png"
+          alt="Tokimeki Mantle title"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+
+        <div className="absolute inset-0 bg-black/20" />
+
+        <div className="absolute right-5 top-5 z-20 flex rounded-full bg-black/35 p-1 text-xs shadow-lg backdrop-blur">
+          <button
+            type="button"
+            onClick={() => setLanguage("ja")}
+            className={`rounded-full px-3 py-1 transition ${
+              language === "ja"
+                ? "bg-white text-black"
+                : "text-white/90 hover:bg-white/10"
+            }`}
+          >
+            日本語
+          </button>
+          <button
+            type="button"
+            onClick={() => setLanguage("en")}
+            className={`rounded-full px-3 py-1 transition ${
+              language === "en"
+                ? "bg-white text-black"
+                : "text-white/90 hover:bg-white/10"
+            }`}
+          >
+            English
+          </button>
+        </div>
+
+        <div className="absolute bottom-16 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-4">
+          <button
+            type="button"
+            onClick={startGame}
+            className="rounded-full bg-pink-300 px-14 py-4 text-xl font-bold tracking-[0.25em] text-black shadow-2xl transition hover:bg-pink-200 active:scale-95 md:px-20 md:py-5 md:text-2xl"
+          >
+            {t.start}
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleOpeningBgm}
+            className="rounded-full bg-black/65 px-6 py-2 text-sm font-bold text-white shadow-lg backdrop-blur transition hover:bg-black/85"
+          >
+            {bgmOn ? t.bgmOff : t.bgmOn}
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-black text-white">
       <section className="relative mx-auto min-h-screen w-full max-w-[1280px] overflow-hidden bg-black">
@@ -261,6 +368,16 @@ export default function Home() {
         />
 
         <div className="absolute inset-0 bg-black/5" />
+
+        <div className="absolute left-5 top-5 z-50">
+          <button
+            type="button"
+            onClick={toggleOpeningBgm}
+            className="rounded-full bg-black/55 px-4 py-2 text-xs font-bold text-white shadow-lg backdrop-blur transition hover:bg-black/75"
+          >
+            {bgmOn ? t.bgmOff : t.bgmOn}
+          </button>
+        </div>
 
         {!dialogue && !isLeaving && (
           <div className="absolute left-0 right-0 top-[190px] z-30 px-4 md:top-[230px] md:px-10">
